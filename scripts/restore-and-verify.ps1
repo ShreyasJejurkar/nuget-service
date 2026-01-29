@@ -45,7 +45,10 @@ foreach ($Pkg in $Packages) {
 
 # Collect only .nupkg files
 Get-ChildItem -Path $OutputDir -Recurse -Filter "*.nupkg" | ForEach-Object {
-    Copy-Item $_.FullName -Destination $NupkgDir -Force
+    $dest = Join-Path $NupkgDir $_.Name
+    if ($_.FullName -ne $dest) {
+        Copy-Item $_.FullName -Destination $dest -Force
+    }
 }
 
 # Optional: clean everything else to save space
