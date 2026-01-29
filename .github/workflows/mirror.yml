@@ -1,0 +1,47 @@
+name: NuGet Offline Mirror
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - packages.txt
+
+jobs:
+  mirror:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install NuGet CLI
+        run:
+          |
+          choco install nuget.commandline -y
+
+      - name: Restore NuGet packages (with dependencies)
+        shell: bash
+        run:
+          |
+          chmod +x scripts/*.sh
+          ./scripts/restore.sh
+
+      - name: Verify downloaded packages
+        shell: bash
+        run:
+          |
+          ./scripts/verify.sh
+
+      - name: Zip NuGet packages
+        shell: bash
+        run:
+          |
+          cd output
+          zip -r nuget-offline-packages.zip packages
+
+      - name: Upload NuGet packages as GitHub Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-offline-packages
+          path: output/nuget-offline-packages.zip
+          retention-days: 30
