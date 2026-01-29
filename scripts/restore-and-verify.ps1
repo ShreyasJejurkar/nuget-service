@@ -1,65 +1,54 @@
 $ErrorActionPreference = "Stop"
 
-$Root = Get-Location
-$OutputDir   = Join-Path $Root "output"
-$PackagesDir = Join-Path $OutputDir "packages"
-$NupkgDir    = Join-Path $OutputDir "nupkgs"
-$ConfigFile  = Join-Path $Root "packages.config"
-$JsonFile    = Join-Path $Root "packages.json"
+$Root       = Get-Location
+$OutputDir  = Join-Path $Root "output"
+$NupkgDir   = Join-Path $OutputDir "nupkgs"
+$JsonFile   = Join-Path $Root "packages.json"
+$DummyProj  = Join-Path $OutputDir "DummyRestore.csproj"
 
 Write-Host "NuGet offline restore starting"
 Write-Host "--------------------------------"
 
 # Clean output
 Remove-Item $OutputDir -Recurse -Force -ErrorAction SilentlyContinue
-New-Item -ItemType Directory -Force -Path $PackagesDir | Out-Null
 New-Item -ItemType Directory -Force -Path $NupkgDir | Out-Null
 
 # Load packages.json
-if (!(Test-Path $JsonFile)) {
-    Write-Error "packages.json not found"
-}
+if (!(Test-Path $JsonFile)) { Write-Error "packages.json not found" }
 
 $Packages = Get-Content $JsonFile -Raw | ConvertFrom-Json
 
-# Generate packages.config
-$xml = New-Object System.Xml.XmlDocument
-$decl = $xml.CreateXmlDeclaration("1.0", "utf-8", $null)
-$xml.AppendChild($decl) | Out-Null
-
-$packagesNode = $xml.CreateElement("packages")
-$xml.AppendChild($packagesNode) | Out-Null
+# Generate dummy .csproj
+$ProjectContent = @"
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+"@
 
 foreach ($pkg in $Packages) {
-    Write-Host "Adding package $($pkg.id) $($pkg.version)"
-
-    $pkgNode = $xml.CreateElement("package")
-    $pkgNode.SetAttribute("id", $pkg.id)
-    $pkgNode.SetAttribute("version", $pkg.version)
-    $pkgNode.SetAttribute("targetFramework", "net8.0")
-
-    $packagesNode.AppendChild($pkgNode) | Out-Null
+    $ProjectContent += "    <PackageReference Include=`"$($pkg.id)`" Version=`"$($pkg.version)`" />`r`n"
 }
 
-$xml.Save($ConfigFile)
+$ProjectContent += @"
+  </ItemGroup>
+</Project>
+"@
 
-# Restore packages (downloads .nupkg files)
-nuget restore $ConfigFile `
-    -PackagesDirectory $PackagesDir `
-    -NoCache `
-    -NonInteractive
+# Write dummy project file
+New-Item -ItemType File -Force -Path $DummyProj | Out-Null
+Set-Content -Path $DummyProj -Value $ProjectContent
 
-# Collect .nupkg files into flat folder
-Get-ChildItem $PackagesDir -Recurse -Filter "*.nupkg" | ForEach-Object {
-    Copy-Item $_.FullName $NupkgDir -Force
-}
+Write-Host "Generated dummy project for restore at $DummyProj"
 
-# Verify
-$Count = (Get-ChildItem $NupkgDir -Filter "*.nupkg").Count
+# Restore all packages (downloads .nupkg files including dependencies)
+dotnet restore $DummyProj --packages $NupkgDir --ignore-failed-sources --verbosity minimal
 
-if ($Count -eq 0) {
-    Write-Error "No NuGet packages were downloaded"
-}
+# Verify .nupkg files exist
+$Count = (Get-ChildItem $NupkgDir -Recurse -Filter "*.nupkg").Count
 
-Write-Host "Verified $Count NuGet packages"
-Write-Host "Output location: $NupkgDir"
+if ($Count -eq 0) { Write-Error "❌ No .nupkg files found after restore" }
+
+Write-Host "✅ Verified $Count NuGet packages and dependencies"
+Write-Host "📦 Packages output: $NupkgDir"

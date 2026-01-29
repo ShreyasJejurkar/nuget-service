@@ -14,10 +14,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install NuGet CLI
-        run: choco install nuget.commandline -y
+      - name: Install .NET SDK
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 8.0.x
 
-      - name: Restore and verify NuGet packages
+      - name: Restore packages including dependencies
         run:
           |
           powershell -ExecutionPolicy Bypass -File scripts/restore-and-verify.ps1
