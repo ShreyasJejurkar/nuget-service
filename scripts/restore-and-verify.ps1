@@ -1,7 +1,7 @@
 # Stop on any error
 $ErrorActionPreference = "Stop"
 
-Write-Host "📦 Starting NuGet offline mirror"
+Write-Host "Starting NuGet offline mirror"
 
 # Paths
 $Root      = Resolve-Path "."
@@ -31,7 +31,7 @@ foreach ($Pkg in $Packages) {
     $Id = $Pkg.id
     $Version = $Pkg.version
 
-    Write-Host "➡ Restoring $Id $Version (with dependencies)"
+    Write-Host "Restoring $Id $Version (including dependencies)"
 
     nuget install $Id `
         -Version $Version `
@@ -54,9 +54,9 @@ Get-ChildItem $OutputDir | Where-Object { $_.FullName -ne $NupkgDir } | Remove-I
 # Verify
 $Count = (Get-ChildItem $NupkgDir -Recurse -Filter "*.nupkg").Count
 if ($Count -eq 0) {
-    throw "❌ No .nupkg files found after restore"
+    throw "No .nupkg files found after restore"
 }
 
-Write-Host "✅ Offline NuGet mirror ready"
-Write-Host "📦 Total .nupkg files: $Count"
-Write-Host "📁 Packages available at: $NupkgDir"
+Write-Host "Offline NuGet mirror ready."
+Write-Host "Total .nupkg files: $Count"
+Write-Host "Packages available at: $NupkgDir"
