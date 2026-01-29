@@ -1,37 +1,14 @@
-name: NuGet Offline Mirror
+- name: Setup NuGet
+  uses: NuGet/setup-nuget@v2
 
-on:
-  workflow_dispatch:
-  push:
-    paths:
-      - packages.json
+- name: Restore and verify NuGet packages
+  shell: powershell
+  run:
+    |
+    powershell -ExecutionPolicy Bypass -File scripts/restore-and-verify.ps1
 
-jobs:
-  mirror:
-    runs-on: windows-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install .NET SDK
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: 8.0.x
-
-      - name: Restore packages including dependencies
-        run:
-          |
-          powershell -ExecutionPolicy Bypass -File scripts/restore-and-verify.ps1
-
-      - name: Zip NuGet packages
-        run:
-          |
-          powershell Compress-Archive -Path output/nupkgs -DestinationPath nuget-offline-packages.zip
-
-      - name: Upload NuGet packages as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: nuget-offline-packages
-          path: nuget-offline-packages.zip
-          retention-days: 30
+- name: Upload NuGet offline packages
+  uses: actions/upload-artifact@v4
+  with:
+    name: nuget-offline-packages
+    path: nupkgs

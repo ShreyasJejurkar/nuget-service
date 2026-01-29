@@ -1,54 +1,35 @@
 $ErrorActionPreference = "Stop"
 
-$Root       = Get-Location
-$OutputDir  = Join-Path $Root "output"
-$NupkgDir   = Join-Path $OutputDir "nupkgs"
-$JsonFile   = Join-Path $Root "packages.json"
-$DummyProj  = Join-Path $OutputDir "DummyRestore.csproj"
+$PackagesFile = "packages.txt"
+$OutputDir = "$PSScriptRoot\..\nupkgs"
 
 Write-Host "NuGet offline restore starting"
+Write-Host "Packages file: $PackagesFile"
+Write-Host "Output dir  : $OutputDir"
 Write-Host "--------------------------------"
 
-# Clean output
-Remove-Item $OutputDir -Recurse -Force -ErrorAction SilentlyContinue
-New-Item -ItemType Directory -Force -Path $NupkgDir | Out-Null
-
-# Load packages.json
-if (!(Test-Path $JsonFile)) { Write-Error "packages.json not found" }
-
-$Packages = Get-Content $JsonFile -Raw | ConvertFrom-Json
-
-# Generate dummy .csproj
-$ProjectContent = @"
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
-  </PropertyGroup>
-  <ItemGroup>
-"@
-
-foreach ($pkg in $Packages) {
-    $ProjectContent += "    <PackageReference Include=`"$($pkg.id)`" Version=`"$($pkg.version)`" />`r`n"
+if (!(Test-Path $PackagesFile)) {
+    Write-Error "packages.txt not found"
 }
 
-$ProjectContent += @"
-  </ItemGroup>
-</Project>
-"@
+if (!(Test-Path $OutputDir)) {
+    New-Item -ItemType Directory -Path $OutputDir | Out-Null
+}
 
-# Write dummy project file
-New-Item -ItemType File -Force -Path $DummyProj | Out-Null
-Set-Content -Path $DummyProj -Value $ProjectContent
+$Packages = Get-Content $PackagesFile | Where-Object { $_ -and -not $_.StartsWith("#") }
 
-Write-Host "Generated dummy project for restore at $DummyProj"
+foreach ($Pkg in $Packages) {
+    if ($Pkg -notmatch "@") {
+        Write-Error "Invalid format: $Pkg (expected Package@Version)"
+    }
 
-# Restore all packages (downloads .nupkg files including dependencies)
-dotnet restore $DummyProj --packages $NupkgDir --ignore-failed-sources --verbosity minimal
+    $Name, $Version = $Pkg.Split("@")
 
-# Verify .nupkg files exist
-$Count = (Get-ChildItem $NupkgDir -Recurse -Filter "*.nupkg").Count
+    Write-Host "Restoring $Name $Version"
 
-if ($Count -eq 0) { Write-Error "❌ No .nupkg files found after restore" }
-
-Write-Host "✅ Verified $Count NuGet packages and dependencies"
-Write-Host "📦 Packages output: $NupkgDir"
+    nuget install $Name `
+        -Version $Version `
+        -OutputDirectory $OutputDir `
+        -DependencyVersion Highest `
+        -Framework Any `
+        -Source https://api.nuget.org/v3/index.json `

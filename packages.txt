@@ -1,0 +1,2 @@
+Microsoft.Extensions.Logging.Abstractions@10.0.2
+Newtonsoft.Json@13.0.3
