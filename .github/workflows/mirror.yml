@@ -37,7 +37,7 @@ jobs:
         run:
           |
           cd output
-          zip -r nuget-offline-packages.zip packages
+          zip -r nuget-offline-packages.zip nupkgs
 
       - name: Upload NuGet packages as GitHub Artifact
         uses: actions/upload-artifact@v4

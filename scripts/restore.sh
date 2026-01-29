@@ -28,3 +28,11 @@ done < packages.txt
 echo "✅ Restore complete"
 
 echo "✅ Restore complete"
+
+echo "📦 Collecting .nupkg files"
+
+mkdir -p output/nupkgs
+
+find output/packages -type f -name "*.nupkg" -exec cp {} output/nupkgs/ \;
+
+echo "📦 Collected $(ls output/nupkgs | wc -l) nupkg files"
