@@ -11,37 +11,25 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Install NuGet CLI
-        run:
-          |
-          choco install nuget.commandline -y
+        run: choco install nuget.commandline -y
 
-      - name: Restore NuGet packages (with dependencies)
-        shell: bash
+      - name: Restore and verify NuGet packages
         run:
           |
-          chmod +x scripts/*.sh
-          ./scripts/restore.sh
-
-      - name: Verify downloaded packages
-        shell: bash
-        run:
-          |
-          ./scripts/verify.sh
+          powershell -ExecutionPolicy Bypass -File scripts/restore-and-verify.ps1
 
       - name: Zip NuGet packages
-        shell: bash
         run:
           |
-          cd output
-          zip -r nuget-offline-packages.zip nupkgs
+          powershell Compress-Archive -Path output/nupkgs -DestinationPath nuget-offline-packages.zip
 
-      - name: Upload NuGet packages as GitHub Artifact
+      - name: Upload NuGet packages as artifact
         uses: actions/upload-artifact@v4
         with:
           name: nuget-offline-packages
-          path: output/nuget-offline-packages.zip
+          path: nuget-offline-packages.zip
           retention-days: 30
