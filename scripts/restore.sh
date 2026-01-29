@@ -20,7 +20,7 @@ do
     -OutputDirectory "$OUT_DIR" \
     -DependencyVersion Highest \
     -DirectDownload \
-    -NoCache \
+    -NoHttpCache \
     -NonInteractive
 
 done < packages.txt
