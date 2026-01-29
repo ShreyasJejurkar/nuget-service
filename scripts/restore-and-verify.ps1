@@ -1,35 +1,51 @@
 $ErrorActionPreference = "Stop"
 
-$PackagesFile = "packages.txt"
-$OutputDir = "$PSScriptRoot\..\nupkgs"
+Write-Host "Starting NuGet offline mirror"
 
-Write-Host "NuGet offline restore starting"
-Write-Host "Packages file: $PackagesFile"
-Write-Host "Output dir  : $OutputDir"
-Write-Host "--------------------------------"
+# Paths
+$Root = Resolve-Path "."
+$PackagesFile = Join-Path $Root "packages.json"
+$OutputDir = Join-Path $Root "nupkgs"
 
 if (!(Test-Path $PackagesFile)) {
-    Write-Error "packages.txt not found"
+    throw "packages.json not found"
 }
 
-if (!(Test-Path $OutputDir)) {
-    New-Item -ItemType Directory -Path $OutputDir | Out-Null
+# Prepare output directory
+if (Test-Path $OutputDir) {
+    Remove-Item $OutputDir -Recurse -Force
 }
+New-Item -ItemType Directory -Path $OutputDir | Out-Null
 
-$Packages = Get-Content $PackagesFile | Where-Object { $_ -and -not $_.StartsWith("#") }
+# Load package list
+$Json = Get-Content $PackagesFile -Raw | ConvertFrom-Json
+$Packages = $Json.packages
+
+if ($Packages.Count -eq 0) {
+    throw "No packages defined"
+}
 
 foreach ($Pkg in $Packages) {
-    if ($Pkg -notmatch "@") {
-        Write-Error "Invalid format: $Pkg (expected Package@Version)"
-    }
+    $Id = $Pkg.id
+    $Version = $Pkg.version
 
-    $Name, $Version = $Pkg.Split("@")
+    Write-Host "Installing $Id $Version with dependencies"
 
-    Write-Host "Restoring $Name $Version"
-
-    nuget install $Name `
+    nuget install $Id `
         -Version $Version `
         -OutputDirectory $OutputDir `
         -DependencyVersion Highest `
-        -Framework Any `
-        -Source https://api.nuget.org/v3/index.json `
+        -DirectDownload `
+        -NonInteractive `
+        -Source https://api.nuget.org/v3/index.json
+}
+
+# Verify
+$Nupkgs = Get-ChildItem $OutputDir -Recurse -Filter *.nupkg
+
+if ($Nupkgs.Count -eq 0) {
+    throw "No nupkg files downloaded"
+}
+
+Write-Host "Downloaded $($Nupkgs.Count) packages successfully"
+Write-Host "Offline NuGet mirror ready"
