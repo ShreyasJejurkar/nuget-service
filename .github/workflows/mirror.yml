@@ -20,6 +20,12 @@ jobs:
           |
           powershell -ExecutionPolicy Bypass -File scripts/restore-and-verify.ps1
 
+      - name: Verify offline NuGet packages
+        shell: powershell
+        run:
+          |
+          powershell -ExecutionPolicy Bypass -File scripts/verify-offline.ps1
+
       - name: Upload NuGet offline packages
         uses: actions/upload-artifact@v4
         with:
