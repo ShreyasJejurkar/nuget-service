@@ -34,8 +34,7 @@ foreach ($Pkg in $Packages) {
     dotnet add package $Id `
         --version $Version `
         --source $NupkgDir `
-        --no-restore `
-        --disable-parallel
+        --no-restore
 }
 
 # Restore project using only offline source
