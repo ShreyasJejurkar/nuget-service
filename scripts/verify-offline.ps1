@@ -14,7 +14,7 @@ New-Item -ItemType Directory -Path $VerifyDir | Out-Null
 Set-Location $VerifyDir
 
 # Create dummy .NET project
-dotnet new console -n DummyVerify -f net7.0 | Out-Null
+dotnet new console -n DummyVerify -f net10.0 | Out-Null
 Set-Location "DummyVerify"
 
 # Add offline NuGet source
