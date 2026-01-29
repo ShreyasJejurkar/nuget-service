@@ -1,19 +1,18 @@
 #!/usr/bin/env bash
 set -e
 
-ROOT_DIR="$(pwd)"
-OUT_DIR="$ROOT_DIR/output/packages"
-LOCAL_NUGET_PACKAGES="$ROOT_DIR/.nuget/packages"
+# Convert repo root to Windows path
+WIN_ROOT=$(cd . && pwd -W)
 
-mkdir -p "$OUT_DIR"
-mkdir -p "$LOCAL_NUGET_PACKAGES"
+OUT_DIR="$WIN_ROOT\\output\\packages"
+LOCAL_NUGET_PACKAGES="$WIN_ROOT\\.nuget\\packages"
 
-# 🔥 Force NuGet to NEVER touch Program Files paths
-export NUGET_PACKAGES="$LOCAL_NUGET_PACKAGES"
+mkdir -p output/packages
+mkdir -p .nuget/packages
 
 echo "📦 NuGet offline restore starting"
 echo "--------------------------------"
-echo "Using NUGET_PACKAGES=$NUGET_PACKAGES"
+echo "WIN_ROOT=$WIN_ROOT"
 
 while IFS="|" read -r PACKAGE VERSION
 do
@@ -21,13 +20,15 @@ do
 
   echo "➡️  Restoring $PACKAGE $VERSION"
 
-  nuget install "$PACKAGE" \
-    -Version "$VERSION" \
-    -OutputDirectory "$OUT_DIR" \
-    -DependencyVersion Highest \
-    -DirectDownload \
-    -NonInteractive \
-    -ConfigFile nuget.config
+  cmd.exe /c ^
+    "set NUGET_PACKAGES=$LOCAL_NUGET_PACKAGES && ^
+     nuget install $PACKAGE ^
+       -Version $VERSION ^
+       -OutputDirectory $OUT_DIR ^
+       -DependencyVersion Highest ^
+       -DirectDownload ^
+       -NonInteractive ^
+       -ConfigFile nuget.config"
 
 done < packages.txt
 
