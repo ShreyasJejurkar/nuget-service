@@ -3,8 +3,10 @@ set -e
 
 ROOT_DIR="$(pwd)"
 OUT_DIR="$ROOT_DIR/output/packages"
+NUGET_PACKAGES_DIR="$ROOT_DIR/.nuget/packages"
 
 mkdir -p "$OUT_DIR"
+mkdir -p "$NUGET_PACKAGES_DIR"
 
 echo "📦 NuGet offline restore starting"
 echo "--------------------------------"
@@ -18,10 +20,11 @@ do
   nuget install "$PACKAGE" \
     -Version "$VERSION" \
     -OutputDirectory "$OUT_DIR" \
+    -PackagesDirectory "$NUGET_PACKAGES_DIR" \
     -DependencyVersion Highest \
     -DirectDownload \
-    -NoHttpCache \
-    -NonInteractive
+    -NonInteractive \
+    -ConfigFile nuget.config
 
 done < packages.txt
 
