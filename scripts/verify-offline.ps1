@@ -1,7 +1,7 @@
 # Stop on any error
 $ErrorActionPreference = "Stop"
 
-Write-Host "🔍 Verifying offline NuGet packages"
+Write-Host "Verifying offline NuGet packages"
 
 $Root        = Resolve-Path "."
 $PackagesFile = Join-Path $Root "packages.json"
@@ -42,5 +42,5 @@ foreach ($Pkg in $Packages) {
 Write-Host "Restoring dummy project offline..."
 dotnet restore --source $NupkgDir --no-cache
 
-Write-Host "✅ Offline restore verification SUCCESS"
+Write-Host "Offline restore verification SUCCESS"
 Write-Host "All packages and dependencies are available in $NupkgDir"
