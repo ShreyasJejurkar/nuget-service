@@ -18,18 +18,17 @@ if (!(Test-Path $PackagesFile)) {
 if (Test-Path $OutputDir) { Remove-Item $OutputDir -Recurse -Force }
 New-Item -ItemType Directory -Path $NupkgDir | Out-Null
 
-# Load package list
+# Load package list (format: { "PackageId": "1.2.3", ... })
 $Json = Get-Content $PackagesFile -Raw | ConvertFrom-Json
-$Packages = $Json.packages
 
-if ($Packages.Count -eq 0) {
+if ($null -eq $Json -or $Json.psobject.Properties.Count -eq 0) {
     throw "No packages defined in packages.json"
-}
+} 
 
 # Download packages and dependencies
-foreach ($Pkg in $Packages) {
-    $Id = $Pkg.id
-    $Version = $Pkg.version
+foreach ($Pair in $Json.psobject.Properties) {
+    $Id = $Pair.Name
+    $Version = $Pair.Value
 
     Write-Host "Restoring $Id $Version (including dependencies)"
 

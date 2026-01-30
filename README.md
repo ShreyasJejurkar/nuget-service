@@ -31,16 +31,12 @@ nuget-offline/
 
 ### Configuration
 
-Edit `packages.json` to specify the packages you want to download:
+Edit `packages.json` to specify the packages you want to download (simple key/value object):
 
 ```json
 {
-  "packages": [
-    {
-      "id": "PackageName",
-      "version": "1.0.0"
-    }
-  ]
+  "PackageName": "1.0.0",
+  "Another.Package": "2.3.4"
 }
 ```
 

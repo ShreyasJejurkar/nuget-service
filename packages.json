@@ -1,12 +1,4 @@
 {
-    "packages": [
-        {
-            "id": "Serilog",
-            "version": "3.1.1"
-        },
-        {
-            "id": "MSTest.TestAdapter",
-            "version": "4.0.2"
-        }
-    ]
+    "Serilog": "3.1.1",
+    "MSTest.TestAdapter": "4.0.2"
 }

@@ -20,14 +20,17 @@ Set-Location "DummyVerify"
 # Add offline NuGet source
 dotnet nuget add source $NupkgDir -n OfflineTestSource | Out-Null
 
-# Load package list
+# Load package list (format: { "PackageId": "1.2.3", ... })
 $Json = Get-Content $PackagesFile -Raw | ConvertFrom-Json
-$Packages = $Json.packages
+
+if ($null -eq $Json -or $Json.psobject.Properties.Count -eq 0) {
+    throw "No packages defined in packages.json"
+}
 
 # Install each package offline
-foreach ($Pkg in $Packages) {
-    $Id = $Pkg.id
-    $Version = $Pkg.version
+foreach ($Pair in $Json.psobject.Properties) {
+    $Id = $Pair.Name
+    $Version = $Pair.Value
 
     Write-Host "Installing $Id $Version from offline source"
 
