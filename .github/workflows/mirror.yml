@@ -31,3 +31,49 @@ jobs:
         with:
           name: nuget-offline-packages
           path: output/nupkgs
+
+      - name: Generate short link for artifact
+        shell: powershell
+        run:
+          |
+          $artifactName = "nuget-offline-packages"
+          $artifactUrl = "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}"
+
+          Write-Host "Artifact URL: $artifactUrl"
+
+          # Call is.gd API to shorten the URL
+          try {
+            $shortLinkUrl = "https://is.gd/?url=$([System.Uri]::EscapeDataString($artifactUrl))&format=json"
+            $response = Invoke-RestMethod -Uri $shortLinkUrl -Method Get -ErrorAction Stop
+            $shortLink = $response.shorturl
+            
+            Write-Host "Short link: $shortLink"
+            
+            # Write to job summary
+            $summary = @"
+          ## 📦 NuGet Offline Packages Ready
+
+          **Download link**: [$artifactName]($artifactUrl)
+
+          **Short link**: [$shortLink]($shortLink)
+
+          Run ID: ${{ github.run_id }}
+          "@
+            
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value $summary
+            Write-Host "Job summary updated with short link"
+          }
+          catch {
+            Write-Host "Error creating short link: $_"
+            Write-Host "Continuing with regular artifact link..."
+            
+            $summary = @"
+          ## 📦 NuGet Offline Packages Ready
+
+          **Download link**: [$artifactName]($artifactUrl)
+
+          Run ID: ${{ github.run_id }}
+          "@
+            
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value $summary
+          }
