@@ -88,16 +88,11 @@ jobs:
             
             $summary = @"
           ## 📦 NuGet Offline Packages Ready
-
-          **Download link**: [$artifactName]($artifactUrl)
-
           Run ID: ${{ github.run_id }}
           "@
           } else {
             $summary = @"
           ## 📦 NuGet Offline Packages Ready
-
-          **Download link**: [$artifactName]($artifactUrl)
 
           **Short link**: [$shortLink]($shortLink)
 
