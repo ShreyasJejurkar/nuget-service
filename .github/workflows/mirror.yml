@@ -41,15 +41,59 @@ jobs:
 
           Write-Host "Artifact URL: $artifactUrl"
 
-          # Call is.gd API to shorten the URL
-          try {
-            $shortLinkUrl = "https://is.gd/?url=$([System.Uri]::EscapeDataString($artifactUrl))&format=json"
-            $response = Invoke-RestMethod -Uri $shortLinkUrl -Method Get -ErrorAction Stop
-            $shortLink = $response.shorturl
+          $shortLink = $null
+          
+          # Try multiple URL shortening services
+          $services = @(
+            @{
+              name = "is.gd"
+              url = "https://is.gd/create.php?format=json&url=$([System.Uri]::EscapeDataString($artifactUrl))"
+              property = "shorturl"
+            },
+            @{
+              name = "tinyurl"
+              url = "https://tinyurl.com/api-create.php?url=$([System.Uri]::EscapeDataString($artifactUrl))"
+              property = $null  # tinyurl returns plain text
+            }
+          )
+
+          foreach ($service in $services) {
+            try {
+              Write-Host "Attempting to create short link using $($service.name)..."
+              
+              if ($service.property) {
+                $response = Invoke-RestMethod -Uri $service.url -Method Get -ErrorAction Stop -TimeoutSec 10
+                $shortLink = $response.$($service.property)
+              } else {
+                $shortLink = Invoke-RestMethod -Uri $service.url -Method Get -ErrorAction Stop -TimeoutSec 10
+              }
+              
+              if ([string]::IsNullOrEmpty($shortLink)) {
+                Write-Host "Empty response from $($service.name), trying next service..."
+                continue
+              }
+              
+              Write-Host "Successfully created short link using $($service.name): $shortLink"
+              break
+            }
+            catch {
+              Write-Host "Error with $($service.name): $_"
+              continue
+            }
+          }
+
+          # Write to job summary
+          if ([string]::IsNullOrEmpty($shortLink)) {
+            Write-Host "Could not create short link, using regular artifact URL"
             
-            Write-Host "Short link: $shortLink"
-            
-            # Write to job summary
+            $summary = @"
+          ## 📦 NuGet Offline Packages Ready
+
+          **Download link**: [$artifactName]($artifactUrl)
+
+          Run ID: ${{ github.run_id }}
+          "@
+          } else {
             $summary = @"
           ## 📦 NuGet Offline Packages Ready
 
@@ -59,21 +103,7 @@ jobs:
 
           Run ID: ${{ github.run_id }}
           "@
-            
-            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value $summary
-            Write-Host "Job summary updated with short link"
           }
-          catch {
-            Write-Host "Error creating short link: $_"
-            Write-Host "Continuing with regular artifact link..."
-            
-            $summary = @"
-          ## 📦 NuGet Offline Packages Ready
-
-          **Download link**: [$artifactName]($artifactUrl)
-
-          Run ID: ${{ github.run_id }}
-          "@
-            
-            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value $summary
-          }
+          
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value $summary
+          Write-Host "Job summary updated"
