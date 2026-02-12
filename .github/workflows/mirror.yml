@@ -37,49 +37,37 @@ jobs:
         run:
           |
           $artifactName = "nuget-offline-packages"
-          $artifactUrl = "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}"
+          $artifactUrl = "https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/nuget-offline-packages.zip"
 
           Write-Host "Artifact URL: $artifactUrl"
 
           $shortLink = $null
-          
-          # Try multiple URL shortening services
-          $services = @(
-            @{
-              name = "is.gd"
-              url = "https://is.gd/create.php?format=json&url=$([System.Uri]::EscapeDataString($artifactUrl))"
-              property = "shorturl"
-            },
-            @{
-              name = "tinyurl"
-              url = "https://tinyurl.com/api-create.php?url=$([System.Uri]::EscapeDataString($artifactUrl))"
-              property = $null  # tinyurl returns plain text
-            }
-          )
 
-          foreach ($service in $services) {
-            try {
-              Write-Host "Attempting to create short link using $($service.name)..."
-              
-              if ($service.property) {
-                $response = Invoke-RestMethod -Uri $service.url -Method Get -ErrorAction Stop -TimeoutSec 10
-                $shortLink = $response.$($service.property)
-              } else {
-                $shortLink = Invoke-RestMethod -Uri $service.url -Method Get -ErrorAction Stop -TimeoutSec 10
-              }
-              
-              if ([string]::IsNullOrEmpty($shortLink)) {
-                Write-Host "Empty response from $($service.name), trying next service..."
-                continue
-              }
-              
+          # Use is.gd for URL shortening
+          $service = @{
+            name = "is.gd"
+            url = "https://is.gd/create.php?format=json&url=$([System.Uri]::EscapeDataString($artifactUrl))"
+            property = "shorturl"
+          }
+
+          try {
+            Write-Host "Attempting to create short link using $($service.name)..."
+            
+            if ($service.property) {
+              $response = Invoke-RestMethod -Uri $service.url -Method Get -ErrorAction Stop -TimeoutSec 10
+              $shortLink = $response.$($service.property)
+            } else {
+              $shortLink = Invoke-RestMethod -Uri $service.url -Method Get -ErrorAction Stop -TimeoutSec 10
+            }
+            
+            if ([string]::IsNullOrEmpty($shortLink)) {
+              Write-Host "Empty response from is.gd service"
+            } else {
               Write-Host "Successfully created short link using $($service.name): $shortLink"
-              break
             }
-            catch {
-              Write-Host "Error with $($service.name): $_"
-              continue
-            }
+          }
+          catch {
+            Write-Host "Error with is.gd service: $_"
           }
 
           # Write to job summary
@@ -99,6 +87,6 @@ jobs:
           Run ID: ${{ github.run_id }}
           "@
           }
-          
+
           Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value $summary
           Write-Host "Job summary updated"
