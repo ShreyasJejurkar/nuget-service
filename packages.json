@@ -32,6 +32,5 @@
     "Microsoft.TestPlatform.TestHost":"18.0.1",
     "Microsoft.Data.SqlClient.SNI.runtime": "6.0.2",
     "Microsoft.SqlServer.Server":"1.0.0",
-    "System.Configuration.ConfigurationManager":"10.0.3",
-    
+    "System.Configuration.ConfigurationManager":"10.0.3"
 }
