@@ -1,3 +1,5 @@
 {
-    "System.Diagnostics.EventLog": "10.0.2"
+    "System.Diagnostics.EventLog": "10.0.2",
+    "Microsoft.Extensions.Hosting.WindowsServices": "10.0.2",
+    "Quartz.AspNetCore":"3.15.1"
 }
