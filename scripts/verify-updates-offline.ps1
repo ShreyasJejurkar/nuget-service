@@ -9,11 +9,14 @@ $ErrorActionPreference = "Stop"
 Write-Host "Verifying updated NuGet packages offline..."
 
 if (!(Test-Path $UpdatesLogFile)) {
-    Write-Host "No updates log found. Skipping verification."
+    Write-Host "No updates log found at $UpdatesLogFile. Skipping verification."
     exit 0
 }
 
+# Resolve paths to absolute paths BEFORE changing directory
 $NupkgDir = Resolve-Path $NupkgDir
+$UpdatesLogFile = Resolve-Path $UpdatesLogFile
+
 $VerifyDir = Join-Path (Get-Location) "verify-updates-project"
 
 # Clean up previous verify project
