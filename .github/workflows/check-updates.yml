@@ -30,42 +30,22 @@ jobs:
           path: output/nupkgs
           if-no-files-found: ignore
 
-      - name: Upload update summary
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: update-summary
-          path: output/updates-found.txt
-          if-no-files-found: ignore
-
-      - name: Generate short link for artifacts
+      - name: Generate short link and update job summary
         shell: powershell
         run: |
           $packagesArtifactUrl = "https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/nuget-updated-packages.zip"
-          $summaryArtifactUrl = "https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/update-summary.zip"
-
           Write-Host "Packages Artifact URL: $packagesArtifactUrl"
-          Write-Host "Summary Artifact URL: $summaryArtifactUrl"
 
           $packageShortLink = $null
-          $summaryShortLink = $null
 
-          # Use is.gd for URL shortening
-          $service = @{
-            name = "is.gd"
-            property = "shorturl"
-          }
-
-          # Shorten packages artifact URL
+          # Try to shorten packages artifact URL using is.gd
           try {
             Write-Host "Attempting to create short link for packages artifact..."
             $url = "https://is.gd/create.php?format=json&url=$([System.Uri]::EscapeDataString($packagesArtifactUrl))"
             $response = Invoke-RestMethod -Uri $url -Method Get -ErrorAction Stop -TimeoutSec 10
-            $packageShortLink = $response.$($service.property)
+            $packageShortLink = $response.shorturl
             
-            if ([string]::IsNullOrEmpty($packageShortLink)) {
-              Write-Host "Empty response from is.gd service"
-            } else {
+            if (![string]::IsNullOrEmpty($packageShortLink)) {
               Write-Host "Successfully created short link: $packageShortLink"
             }
           }
@@ -73,52 +53,28 @@ jobs:
             Write-Host "Error with is.gd service: $_"
           }
 
-          # Shorten summary artifact URL
-          try {
-            Write-Host "Attempting to create short link for summary artifact..."
-            $url = "https://is.gd/create.php?format=json&url=$([System.Uri]::EscapeDataString($summaryArtifactUrl))"
-            $response = Invoke-RestMethod -Uri $url -Method Get -ErrorAction Stop -TimeoutSec 10
-            $summaryShortLink = $response.$($service.property)
-            
-            if ([string]::IsNullOrEmpty($summaryShortLink)) {
-              Write-Host "Empty response from is.gd service"
-            } else {
-              Write-Host "Successfully created short link: $summaryShortLink"
-            }
-          }
-          catch {
-            Write-Host "Error with is.gd service: $_"
-          }
-
-          # Write to job summary
+          # Prepare job summary
           $summary = @"
           ## NuGet Package Update Check
 
           **Run ID**: ${{ github.run_id }}
-
           **Workflow**: Check for NuGet Package Updates
           **Status**: Completed
 
           "@
 
-          if (![string]::IsNullOrEmpty($packageShortLink) -or ![string]::IsNullOrEmpty($summaryShortLink)) {
-            $summary += "`n### Download Links`n`n"
-            
-            if (![string]::IsNullOrEmpty($packageShortLink)) {
-              $summary += "**Updated Packages**: [$packageShortLink]($packageShortLink)`n`n"
-            } else {
-              $summary += "**Updated Packages**: [$packagesArtifactUrl]($packagesArtifactUrl)`n`n"
-            }
-            
-            if (![string]::IsNullOrEmpty($summaryShortLink)) {
-              $summary += "**Update Summary**: [$summaryShortLink]($summaryShortLink)`n`n"
-            } else {
-              $summary += "**Update Summary**: [$summaryArtifactUrl]($summaryArtifactUrl)`n`n"
-            }
+          # Add package download link
+          $link = if (![string]::IsNullOrEmpty($packageShortLink)) { $packageShortLink } else { $packagesArtifactUrl }
+          $summary += "`n### Downloads`n"
+          $summary += "* **Updated Packages (.zip)**: [$link]($link)`n"
+
+          # Include update details from output/updates-found.txt if it exists
+          $summaryPath = "output/updates-found.txt"
+          if (Test-Path $summaryPath) {
+            $updateDetails = Get-Content -Path $summaryPath -Raw
+            $summary += "`n### Update Details`n`n$updateDetails"
           } else {
-            $summary += "`n### Download Links`n`n"
-            $summary += "**Updated Packages**: [$packagesArtifactUrl]($packagesArtifactUrl)`n`n"
-            $summary += "**Update Summary**: [$summaryArtifactUrl]($summaryArtifactUrl)`n`n"
+            $summary += "`n### Update Details`nNo package updates were found."
           }
 
           Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value $summary
