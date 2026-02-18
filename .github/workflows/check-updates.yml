@@ -22,6 +22,16 @@ jobs:
         run: |
           powershell -ExecutionPolicy Bypass -File scripts/check-and-update-packages.ps1
 
+      - name: Verify updated packages offline
+        shell: powershell
+        run: |
+          # Only verify if updates-found.txt exists
+          if (Test-Path "output/updates-found.txt") {
+            powershell -ExecutionPolicy Bypass -File scripts/verify-updates-offline.ps1
+          } else {
+            Write-Host "No updates found, skipping verification."
+          }
+
       - name: Upload updated packages
         if: always()
         uses: actions/upload-artifact@v4
