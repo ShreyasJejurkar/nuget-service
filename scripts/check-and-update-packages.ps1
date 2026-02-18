@@ -55,7 +55,7 @@ foreach ($Pair in $VersionData.psobject.Properties) {
             $PublicVersion = [System.Version]::Parse($LatestPublicVersion)
             
             if ($PublicVersion -gt $StoredVersion) {
-                Write-Host "✓ Update available: $PackageId ($LatestStoredVersion → $LatestPublicVersion)"
+                Write-Host "[UPDATE] Available: $PackageId ($LatestStoredVersion -> $LatestPublicVersion)"
                 $UpdatesFound += @{
                     Package = $PackageId
                     StoredVersion = $LatestStoredVersion
@@ -68,13 +68,13 @@ foreach ($Pair in $VersionData.psobject.Properties) {
         }
     }
     catch {
-        Write-Host "⚠ Warning: Could not query package $PackageId : $_"
+        Write-Host "[WARN] Warning: Could not query package $PackageId : $_"
     }
 }
 
 # If no updates found, exit gracefully
 if ($UpdatesFound.Count -eq 0) {
-    Write-Host "`n✗ No package updates available"
+    Write-Host "`n[OK] No package updates available"
     Write-Host "All packages are up to date with their stored versions"
     exit 0
 }
@@ -82,19 +82,43 @@ if ($UpdatesFound.Count -eq 0) {
 # Download updated packages and dependencies
 Write-Host "`nDownloading $($PackagesToDownload.Count) updated package(s)..."
 
+# Create a temporary directory for downloading
+$TempDownloadDir = Join-Path $OutputDir "downloads"
+New-Item -ItemType Directory -Path $TempDownloadDir | Out-Null
+
 foreach ($PackageId in $PackagesToDownload.Keys) {
     $Version = $PackagesToDownload[$PackageId]
     
     Write-Host "Installing $PackageId $Version (including dependencies)"
     
-    nuget install $PackageId `
-        -Version $Version `
-        -OutputDirectory $OutputDir `
-        -DependencyVersion Highest `
-        -Framework Any `
-        -DirectDownload `
-        -NonInteractive `
-        -Verbosity quiet
+    # Create a temporary project to download the package
+    $TempProjectDir = Join-Path $TempDownloadDir $PackageId
+    New-Item -ItemType Directory -Path $TempProjectDir -Force | Out-Null
+    Set-Location $TempProjectDir
+    
+    # Create a minimal project file
+    $ProjectContent = @"
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="$PackageId" Version="$Version" />
+  </ItemGroup>
+</Project>
+"@
+    
+    Set-Content -Path (Join-Path $TempProjectDir "Temp.csproj") -Value $ProjectContent
+    
+    try {
+        # Restore packages to the root output directory
+        dotnet restore --packages $OutputDir -v minimal 2>&1 | Where-Object { $_ -match "error" } | ForEach-Object { Write-Host "[ERROR] $_" }
+    }
+    catch {
+        Write-Host "[WARN] Failed to download $PackageId : $_"
+    }
+    
+    Set-Location $Root
 }
 
 # Collect only .nupkg files

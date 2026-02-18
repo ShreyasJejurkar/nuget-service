@@ -23,7 +23,11 @@ $Json = Get-Content $PackagesFile -Raw | ConvertFrom-Json
 
 if ($null -eq $Json -or $Json.psobject.Properties.Count -eq 0) {
     throw "No packages defined in packages.json"
-} 
+}
+
+# Create a temporary directory for downloading
+$TempDownloadDir = Join-Path $OutputDir "downloads"
+New-Item -ItemType Directory -Path $TempDownloadDir | Out-Null
 
 # Download packages and dependencies
 foreach ($Pair in $Json.psobject.Properties) {
@@ -32,14 +36,34 @@ foreach ($Pair in $Json.psobject.Properties) {
 
     Write-Host "Restoring $Id $Version (including dependencies)"
 
-    nuget install $Id `
-        -Version $Version `
-        -OutputDirectory $OutputDir `
-        -DependencyVersion Highest `
-        -Framework Any `
-        -DirectDownload `
-        -NonInteractive `
-        -Verbosity quiet
+    # Create a temporary project to download the package
+    $TempProjectDir = Join-Path $TempDownloadDir $Id
+    New-Item -ItemType Directory -Path $TempProjectDir -Force | Out-Null
+    Set-Location $TempProjectDir
+    
+    # Create a minimal project file
+    $ProjectContent = @"
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="$Id" Version="$Version" />
+  </ItemGroup>
+</Project>
+"@
+    
+    Set-Content -Path (Join-Path $TempProjectDir "Temp.csproj") -Value $ProjectContent
+    
+    try {
+        # Restore packages to the root output directory
+        dotnet restore --packages $OutputDir -v minimal 2>&1 | Where-Object { $_ -match "error" } | ForEach-Object { Write-Host "[ERROR] $_" }
+    }
+    catch {
+        Write-Host "[WARN] Failed to download $Id : $_"
+    }
+    
+    Set-Location $Root
 }
 
 # Collect only .nupkg files

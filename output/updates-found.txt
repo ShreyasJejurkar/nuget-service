@@ -1,0 +1,10 @@
+# Updated Packages
+
+The following packages have newer versions available:
+
+| Package | Stored Version | Latest Version |
+|---------|----------------|----------------|
+| Amazon.Lambda.SQSEvents | 2.2.0 | 2.2.1 |
+| AnyOf | 0.3.0 | 0.5.0.1 |
+| AspNet.ScriptManager.bootstrap | 3.0.0 | 5.2.3 |
+

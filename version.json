@@ -1,0 +1,30 @@
+{
+    "Amazon.Lambda.SQSEvents": [
+        "2.2.0"
+    ],
+    "Antlr": [
+        "3.5.0.2",
+        "3.4.1.9004"
+    ],
+    "AnyOf": [
+        "0.3.0"
+    ],
+    "Asp.Versioning.Abstractions": [
+        "8.1.0"
+    ],
+    "Asp.Versioning.Http": [
+        "8.1.1",
+        "8.1.0"
+    ],
+    "Asp.Versioning.Mvc": [
+        "8.1.1",
+        "8.1.0"
+    ],
+    "Asp.Versioning.Mvc.ApiExplorer": [
+        "8.1.1",
+        "8.1.0"
+    ],
+    "AspNet.ScriptManager.bootstrap": [
+        "3.0.0"
+    ]
+}
