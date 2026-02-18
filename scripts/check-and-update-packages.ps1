@@ -47,23 +47,29 @@ foreach ($Pair in $VersionData.psobject.Properties) {
         $Response = Invoke-RestMethod -Uri $VersionsUrl -Method Get -TimeoutSec 10 -ErrorAction Stop
         
         if ($Response.versions) {
-            # Get the latest version (versions are sorted)
-            $LatestPublicVersion = $Response.versions[-1]
+            # Filter for stable versions only (exclude those with hyphens like -preview, -beta)
+            $StableVersions = $Response.versions | Where-Object { $_ -notmatch '-' }
             
-            # Compare versions
-            $StoredVersion = [System.Version]::Parse($LatestStoredVersion)
-            $PublicVersion = [System.Version]::Parse($LatestPublicVersion)
-            
-            if ($PublicVersion -gt $StoredVersion) {
-                Write-Host "[UPDATE] Available: $PackageId ($LatestStoredVersion -> $LatestPublicVersion)"
-                $UpdatesFound += @{
-                    Package = $PackageId
-                    StoredVersion = $LatestStoredVersion
-                    LatestVersion = $LatestPublicVersion
+            if ($StableVersions) {
+                # Get the latest stable version (versions are sorted)
+                $LatestPublicVersion = $StableVersions[-1]
+                
+                # Compare versions
+                # Note: NuGet API returns versions pre-sorted. 
+                # If the latest public version is different from our latest stored, we treat it as an update.
+                if ($LatestPublicVersion -ne $LatestStoredVersion) {
+                    Write-Host "[UPDATE] Available: $PackageId ($LatestStoredVersion -> $LatestPublicVersion)"
+                    $UpdatesFound += @{
+                        Package = $PackageId
+                        StoredVersion = $LatestStoredVersion
+                        LatestVersion = $LatestPublicVersion
+                    }
+                    $PackagesToDownload[$PackageId] = $LatestPublicVersion
+                } else {
+                    Write-Host "  No update: $PackageId (latest stable: $LatestPublicVersion)"
                 }
-                $PackagesToDownload[$PackageId] = $LatestPublicVersion
             } else {
-                Write-Host "  No update: $PackageId (latest: $LatestPublicVersion)"
+                Write-Host "  No stable versions found for $PackageId"
             }
         }
     }

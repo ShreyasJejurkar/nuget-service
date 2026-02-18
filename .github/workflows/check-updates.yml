@@ -92,7 +92,7 @@ jobs:
 
           # Write to job summary
           $summary = @"
-          ## 📦 NuGet Package Update Check
+          ## NuGet Package Update Check
 
           **Run ID**: ${{ github.run_id }}
 
@@ -105,20 +105,20 @@ jobs:
             $summary += "`n### Download Links`n`n"
             
             if (![string]::IsNullOrEmpty($packageShortLink)) {
-              $summary += "📦 **Updated Packages**: [$packageShortLink]($packageShortLink)`n`n"
+              $summary += "**Updated Packages**: [$packageShortLink]($packageShortLink)`n`n"
             } else {
-              $summary += "📦 **Updated Packages**: [$packagesArtifactUrl]($packagesArtifactUrl)`n`n"
+              $summary += "**Updated Packages**: [$packagesArtifactUrl]($packagesArtifactUrl)`n`n"
             }
             
             if (![string]::IsNullOrEmpty($summaryShortLink)) {
-              $summary += "📋 **Update Summary**: [$summaryShortLink]($summaryShortLink)`n`n"
+              $summary += "**Update Summary**: [$summaryShortLink]($summaryShortLink)`n`n"
             } else {
-              $summary += "📋 **Update Summary**: [$summaryArtifactUrl]($summaryArtifactUrl)`n`n"
+              $summary += "**Update Summary**: [$summaryArtifactUrl]($summaryArtifactUrl)`n`n"
             }
           } else {
             $summary += "`n### Download Links`n`n"
-            $summary += "📦 **Updated Packages**: [$packagesArtifactUrl]($packagesArtifactUrl)`n`n"
-            $summary += "📋 **Update Summary**: [$summaryArtifactUrl]($summaryArtifactUrl)`n`n"
+            $summary += "**Updated Packages**: [$packagesArtifactUrl]($packagesArtifactUrl)`n`n"
+            $summary += "**Update Summary**: [$summaryArtifactUrl]($summaryArtifactUrl)`n`n"
           }
 
           Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value $summary

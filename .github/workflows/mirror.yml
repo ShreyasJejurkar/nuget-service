@@ -75,12 +75,12 @@ jobs:
             Write-Host "Could not create short link, using regular artifact URL"
             
             $summary = @"
-          ## 📦 NuGet Offline Packages Ready
+          ## NuGet Offline Packages Ready
           Run ID: ${{ github.run_id }}
           "@
           } else {
             $summary = @"
-          ## 📦 NuGet Offline Packages Ready
+          ## NuGet Offline Packages Ready
 
           **Short link**: [$shortLink]($shortLink)
 
