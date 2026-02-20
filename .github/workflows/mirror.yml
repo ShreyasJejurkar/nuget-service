@@ -71,21 +71,31 @@ jobs:
           }
 
           # Write to job summary
-          if ([string]::IsNullOrEmpty($shortLink)) {
-            Write-Host "Could not create short link, using regular artifact URL"
-            
-            $summary = @"
-          ## NuGet Offline Packages Ready
-          Run ID: ${{ github.run_id }}
-          "@
-          } else {
-            $summary = @"
-          ## NuGet Offline Packages Ready
+          $summary = "## NuGet Offline Packages Ready`n`n"
+          if (![string]::IsNullOrEmpty($shortLink)) {
+            $summary += "**Short link**: [$shortLink]($shortLink)`n`n"
+          }
+          $summary += "**Run ID**: ${{ github.run_id }}`n"
 
-          **Short link**: [$shortLink]($shortLink)
-
-          Run ID: ${{ github.run_id }}
-          "@
+          # Add collapsible package list
+          if (Test-Path "output/nupkgs") {
+            $files = Get-ChildItem -Path "output/nupkgs" -Filter "*.nupkg"
+            if ($files.Count -gt 0) {
+              $summary += "`n### Package Details`n"
+              $summary += "<details><summary><b>Click to view $($files.Count) mirrored packages</b></summary>`n`n"
+              $summary += "| Package | Version |`n"
+              $summary += "| :--- | :--- |`n"
+              
+              foreach ($file in $files) {
+                if ($file.Name -match "^(.*?)\.(\d+.*)\.nupkg$") {
+                  $summary += "| $($matches[1]) | $($matches[2]) |`n"
+                } else {
+                  $summary += "| $($file.BaseName) | - |`n"
+                }
+              }
+              
+              $summary += "`n</details>`n"
+            }
           }
 
           Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value $summary

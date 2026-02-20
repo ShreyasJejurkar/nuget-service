@@ -82,7 +82,8 @@ jobs:
           $summaryPath = "output/updates-found.txt"
           if (Test-Path $summaryPath) {
             $updateDetails = Get-Content -Path $summaryPath -Raw
-            $summary += "`n### Update Details`n`n$updateDetails"
+            $summary += "`n### Update Details`n"
+            $summary += "<details><summary><b>Click to view update details</b></summary>`n`n$updateDetails`n</details>`n"
           } else {
             $summary += "`n### Update Details`nNo package updates were found."
           }
