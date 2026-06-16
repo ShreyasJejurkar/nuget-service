@@ -1,3 +1,4 @@
 {
-    "coverlet.collector": "10.0.1"
+    "MSTest.TestAdapter": "4.2.3",
+    "MSTest.TestFramework": "4.2.3"
 }
