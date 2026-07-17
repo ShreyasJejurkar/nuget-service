@@ -1,3 +1,4 @@
 {
-    "OfficeIMO.Word.Pdf": "1.0.47"
+    "NuGet.ProjectModel": "7.6.0",
+    "NuGet.Versioning": "7.6.0"
 }
